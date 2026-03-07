@@ -1,6 +1,6 @@
 import json
 
-from steps.gmi_client import get_gmi_client, GMI_MODEL
+from steps.gmi_client import get_gmi_client, GMI_FAST_MODEL
 
 def infer_vibe(profile: dict) -> dict:
     prompt = f"""
@@ -46,10 +46,14 @@ Return ONLY valid JSON. No markdown fences, no explanation.
 """
     client = get_gmi_client()
     response = client.models.generate_content(
-        model=GMI_MODEL,
+        model=GMI_FAST_MODEL,
         contents=[prompt]
     )
     text = response.text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start != -1 and end > start:
+        text = text[start:end]
     return json.loads(text)

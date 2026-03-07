@@ -1,8 +1,6 @@
 import json
 
-from google.genai import types
-
-from steps.gmi_client import get_gmi_client, GMI_MODEL
+from steps.gmi_client import get_gmi_client, GMI_FAST_MODEL
 
 NUDGE_OPTIONS = [
     {"id": "hero",        "label": "Regenerate hero",           "icon": "Sparkles"},
@@ -67,11 +65,14 @@ Return ONLY valid HTML starting with <!DOCTYPE html>. No markdown, no explanatio
 """
     client = get_gmi_client()
     response = client.models.generate_content(
-        model=GMI_MODEL,
+        model=GMI_FAST_MODEL,
         contents=[prompt],
-        config=types.GenerateContentConfig(max_output_tokens=8192)
+        config=None
     )
     html = response.text.strip()
     if html.startswith("```"):
         html = html.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+    doctype_idx = html.lower().find("<!doctype")
+    if doctype_idx > 0:
+        html = html[doctype_idx:]
     return html
