@@ -29,7 +29,7 @@ def search_public_presence(name: str, context: str = "") -> list:
                         "url": r.url,
                         "title": r.title or "",
                         "text": (r.text or "")[:800],
-                        "summary": r.summary or ""
+                        "summary": r.summary or "",
                     })
         except Exception:
             continue

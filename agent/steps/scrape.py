@@ -15,7 +15,7 @@ def scrape_links(urls: list[str]) -> dict:
             r.url: {
                 "text": r.text or "",
                 "summary": r.summary or "",
-                "highlights": r.highlights or []
+                "highlights": r.highlights or [],
             }
             for r in response.results
         }

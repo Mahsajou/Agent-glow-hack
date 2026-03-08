@@ -34,6 +34,7 @@ REQUIREMENTS:
 - Single self-contained HTML file with ALL CSS and JS inline
 - Import fonts from Google Fonts (use @import in <style>)
 - Sections in order: Hero, About, Projects/Work, Skills, Contact
+- Do NOT include any profile photo or image in the hero — names can be ambiguous and photos may not represent the correct person
 - Use ONLY information found in the profile — never invent details
 - Mobile responsive with proper breakpoints
 - Scroll-triggered reveal animations matching the motion_style

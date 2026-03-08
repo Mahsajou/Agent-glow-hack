@@ -27,6 +27,8 @@ def research_person(name: str, context: str = "", timeout: int = 90) -> dict:
             instructions=(
                 f"Research the professional and personal background of {name}. {context}. "
                 f"Find their current role, skills, notable projects, education, and achievements. "
+                f"When researching the user background and interests/hobbies, match ONLY the exact LinkedIn profile "
+                f"the user entered as input — otherwise you won't find the correct person. "
                 f"Also capture any writing samples or quotes, side interests or hobbies, "
                 f"and personality signals — are they technical and precise? creative and expressive? "
                 f"minimalist? verbose? playful? serious? What is their communication style?"
