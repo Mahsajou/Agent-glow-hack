@@ -2,26 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Minus, ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [context, setContext] = useState("");
-  const [urls, setUrls] = useState(["", "", ""]);
 
-  const addUrl = () => setUrls([...urls, ""]);
-  const removeUrl = (i: number) => setUrls(urls.filter((_, idx) => idx !== i));
-  const setUrl = (i: number, val: string) => setUrls(urls.map((u, idx) => (idx === i ? val : u)));
-
-  const validUrls = urls.filter((u) => u.trim().length > 0);
-  const canSubmit = name.trim() && validUrls.length > 0;
+  const canSubmit = name.trim().length > 0;
 
   const handleGenerate = () => {
     const params = new URLSearchParams({
       name: name.trim(),
       context: context.trim(),
-      urls: validUrls.join(","),
     });
     router.push(`/generate?${params.toString()}`);
   };
@@ -52,13 +45,13 @@ export default function Home() {
               Agent-powered portfolio generation
             </p>
             <h1 className="font-display text-5xl font-800 leading-[1.05] text-[#e8e4dc] mb-4">
-              Drop your links.<br />
-              We figure out<br />
-              the rest.
+              Just your name.<br />
+              We search, research,<br />
+              and build.
             </h1>
             <p className="text-sm text-[#555] leading-relaxed mt-4">
-              Our agent scrapes your presence across the web, infers your aesthetic,
-              and generates a portfolio that actually sounds like you.
+              Our agent searches the web, fetches content, researches your background,
+              infers your aesthetic, and generates a portfolio that sounds like you.
             </p>
           </div>
 
@@ -76,47 +69,6 @@ export default function Home() {
                 placeholder="Jane Doe"
                 className="w-full bg-[#111] border border-[#222] rounded-sm px-4 py-3 text-sm text-[#e8e4dc] placeholder-[#333] focus:outline-none focus:border-[#c8f050] transition-colors"
               />
-            </div>
-
-            {/* Links */}
-            <div>
-              <label className="block text-xs text-[#555] tracking-widest uppercase mb-2">
-                Your links
-              </label>
-              <div className="space-y-2">
-                {urls.map((url, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => setUrl(i, e.target.value)}
-                      placeholder={
-                        i === 0
-                          ? "https://github.com/you"
-                          : i === 1
-                          ? "https://linkedin.com/in/you"
-                          : "https://yoursite.com"
-                      }
-                      className="flex-1 bg-[#111] border border-[#222] rounded-sm px-4 py-3 text-sm text-[#e8e4dc] placeholder-[#333] focus:outline-none focus:border-[#c8f050] transition-colors"
-                    />
-                    {urls.length > 1 && (
-                      <button
-                        onClick={() => removeUrl(i)}
-                        className="p-3 border border-[#222] rounded-sm text-[#444] hover:text-[#e8e4dc] hover:border-[#444] transition-colors"
-                      >
-                        <Minus size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={addUrl}
-                className="mt-2 flex items-center gap-1.5 text-xs text-[#444] hover:text-[#c8f050] transition-colors"
-              >
-                <Plus size={12} />
-                Add another link
-              </button>
             </div>
 
             {/* Context */}
@@ -150,7 +102,7 @@ export default function Home() {
 
           {/* Footer hint */}
           <p className="mt-8 text-xs text-[#2a2a2a] text-center">
-            5 Exa APIs · GMI · ~90 seconds
+            Search → Contents → Research → Vibe → Images → HTML
           </p>
         </div>
       </div>

@@ -9,9 +9,8 @@ interface Props {
 }
 
 const API_COLORS: Record<string, string> = {
-  "Contents":  "text-[#60a5fa]",
   "Search":    "text-[#34d399]",
-  "Answer":    "text-[#f59e0b]",
+  "Contents":  "text-[#60a5fa]",
   "Research":  "text-[#a78bfa]",
   "GMI":       "text-[#c8f050]",
 };

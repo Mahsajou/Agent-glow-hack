@@ -1,27 +1,55 @@
+"""
+Infer Vibe agent — infer aesthetic from research.json.
+Output: vibe.json
+"""
+
 import json
+from pathlib import Path
 
-from steps.gmi_client import get_gmi_client, GMI_FAST_MODEL
+from steps.gmi_client import get_gmi_client, GMI_LLM_MODEL
 
-def infer_vibe(profile: dict) -> dict:
+
+def run_infer_vibe(research_path: Path, output_path: Path) -> dict:
+    """
+    Read research.json, infer visual aesthetic via GMI, write vibe.json.
+    Returns the saved data.
+    """
+    research = json.loads(research_path.read_text())
+    if "error" in research:
+        # Fallback vibe
+        data = {
+            "vibe_summary": "Clean, professional dark portfolio",
+            "theme": "dark",
+            "typography_style": "clean sans",
+            "color_palette": {
+                "background": "#0a0a0a",
+                "surface": "#111",
+                "primary_text": "#f0f0f0",
+                "secondary_text": "#888",
+                "accent": "#6366f1",
+                "accent_secondary": "#8b5cf6",
+            },
+            "layout_style": "minimal clean",
+            "motion_style": "subtle fades",
+            "personality_match": "professional",
+            "font_suggestions": {"display": "Inter", "body": "Inter", "mono": "JetBrains Mono"},
+            "tagline_style": "one punchy line",
+        }
+        output_path.write_text(json.dumps(data, indent=2))
+        return data
+
     prompt = f"""
-You are a creative director and designer. Based on this person's professional profile,
-infer the perfect visual aesthetic for their portfolio website.
+You are a creative director and designer. Based on this person's research profile, infer the perfect visual aesthetic for their portfolio website.
 
-PROFILE:
-{json.dumps(profile, indent=2)}
+RESEARCH:
+{json.dumps(research, indent=2)}
 
-Analyze signals like:
-- Their domain (ML engineer vs designer vs founder vs researcher vs creative technologist)
-- Their writing tone from bios, summaries, and writing samples
-- Their personality notes and interests
-- The type of work they do (systems vs product vs creative vs academic)
-- Any explicit aesthetic preferences found in their online presence
-
+Analyze: domain, writing tone, personality notes, interests, type of work.
 Return a JSON object with EXACTLY these fields:
 {{
-  "vibe_summary": "2-3 sentence description of the design direction and why it fits this specific person",
-  "theme": "dark",
-  "typography_style": "e.g. editorial serif, technical mono, clean sans, expressive display",
+  "vibe_summary": "2-3 sentence description of the design direction",
+  "theme": "dark" or "light",
+  "typography_style": "e.g. editorial serif, technical mono, clean sans",
   "color_palette": {{
     "background": "#hex",
     "surface": "#hex",
@@ -30,24 +58,19 @@ Return a JSON object with EXACTLY these fields:
     "accent": "#hex",
     "accent_secondary": "#hex"
   }},
-  "layout_style": "e.g. brutalist grid, flowing editorial, dense technical, minimal whitespace, magazine",
-  "motion_style": "e.g. subtle fades only, no animation, dramatic reveals, smooth parallax, typewriter effects",
-  "personality_match": "e.g. precise and understated, bold and expressive, warm and approachable, raw and direct",
-  "font_suggestions": {{
-    "display": "exact Google Font name",
-    "body": "exact Google Font name",
-    "mono": "exact Google Font name"
-  }},
-  "tagline_style": "e.g. one punchy line, poetic fragment, technical descriptor, question"
+  "layout_style": "e.g. brutalist grid, flowing editorial, minimal",
+  "motion_style": "e.g. subtle fades, dramatic reveals",
+  "personality_match": "e.g. precise and understated, bold and expressive",
+  "font_suggestions": {{ "display": "Google Font name", "body": "...", "mono": "..." }},
+  "tagline_style": "e.g. one punchy line, poetic fragment"
 }}
 
-Be specific and committed to a clear aesthetic direction. 
 Return ONLY valid JSON. No markdown fences, no explanation.
 """
     client = get_gmi_client()
     response = client.models.generate_content(
-        model=GMI_FAST_MODEL,
-        contents=[prompt]
+        model=GMI_LLM_MODEL,
+        contents=[prompt],
     )
     text = response.text.strip()
     if text.startswith("```"):
@@ -56,4 +79,6 @@ Return ONLY valid JSON. No markdown fences, no explanation.
     end = text.rfind("}") + 1
     if start != -1 and end > start:
         text = text[start:end]
-    return json.loads(text)
+    data = json.loads(text)
+    output_path.write_text(json.dumps(data, indent=2))
+    return data

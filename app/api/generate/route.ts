@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  const { name, context, urls } = await req.json();
+  const { name, context } = await req.json();
 
   const encoder = new TextEncoder();
   const stream = new TransformStream();
@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
   };
 
   const agentDir = path.join(process.cwd(), "agent");
-  const pythonPath = path.join(process.cwd(), "venv", "bin", "python3");
-  const args = ["run.py", "generate", name, context || "", ...urls];
+  const pythonPath = path.join(process.cwd(), ".venv", "bin", "python3");
+  const args = ["run.py", "generate", name, context || ""];
 
   const proc = spawn(pythonPath, args, {
     cwd: agentDir,

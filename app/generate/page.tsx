@@ -15,7 +15,6 @@ function GeneratePage() {
 
   const name    = searchParams.get("name") || "";
   const context = searchParams.get("context") || "";
-  const urls    = (searchParams.get("urls") || "").split(",").filter(Boolean);
 
   const [steps, setSteps]             = useState<Step[]>(INITIAL_STEPS);
   const [vibe, setVibe]               = useState<Vibe | null>(null);
@@ -89,7 +88,7 @@ function GeneratePage() {
 
   // Start generation
   useEffect(() => {
-    if (hasStarted.current || !name || urls.length === 0) return;
+    if (hasStarted.current || !name) return;
     hasStarted.current = true;
 
     const run = async () => {
@@ -97,7 +96,7 @@ function GeneratePage() {
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, context, urls }),
+          body: JSON.stringify({ name, context }),
         });
 
         const reader = res.body!.getReader();

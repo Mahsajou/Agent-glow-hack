@@ -1,6 +1,6 @@
 import json
 
-from steps.gmi_client import get_gmi_client, GMI_FAST_MODEL
+from steps.gmi_client import get_gmi_client, GMI_LLM_MODEL
 
 NUDGE_OPTIONS = [
     {"id": "hero",        "label": "Regenerate hero",           "icon": "Sparkles"},
@@ -43,7 +43,7 @@ NUDGE_INSTRUCTIONS = {
     ),
 }
 
-def apply_nudge(nudge_id: str, current_html: str, profile: dict, vibe: dict) -> str:
+def apply_nudge(nudge_id: str, current_html: str, research: dict, vibe: dict) -> str:
     instruction = NUDGE_INSTRUCTIONS.get(nudge_id, "Improve the overall design quality.")
     prompt = f"""
 You are a world-class frontend developer. You have an existing portfolio HTML file and need to apply a specific change.
@@ -54,8 +54,8 @@ CHANGE REQUESTED:
 ORIGINAL VIBE DIRECTION:
 {json.dumps(vibe, indent=2)}
 
-PERSON'S PROFILE:
-{json.dumps(profile, indent=2)}
+PERSON'S BACKGROUND (research):
+{json.dumps(research, indent=2)}
 
 CURRENT HTML:
 {current_html}
@@ -65,7 +65,7 @@ Return ONLY valid HTML starting with <!DOCTYPE html>. No markdown, no explanatio
 """
     client = get_gmi_client()
     response = client.models.generate_content(
-        model=GMI_FAST_MODEL,
+        model=GMI_LLM_MODEL,
         contents=[prompt],
         config=None
     )

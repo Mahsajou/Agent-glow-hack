@@ -1,4 +1,4 @@
-export type StepId = "contents" | "search" | "answer" | "research" | "vibe" | "generate";
+export type StepId = "search" | "contents" | "research" | "vibe" | "symbol" | "images" | "generate";
 export type StepStatus = "idle" | "running" | "done" | "error";
 
 export interface Step {
@@ -55,10 +55,11 @@ export interface AgentEvent {
 }
 
 export const INITIAL_STEPS: Step[] = [
-  { id: "contents",  label: "Scraping your links",         detail: "Exa Contents API",  status: "idle", api: "Contents" },
-  { id: "search",    label: "Mapping public presence",     detail: "Exa Search API",    status: "idle", api: "Search"   },
-  { id: "answer",    label: "Answering targeted Q&A",      detail: "Exa Answer API",    status: "idle", api: "Answer"   },
-  { id: "research",  label: "Deep profile extraction",     detail: "Exa Research API",  status: "idle", api: "Research" },
-  { id: "vibe",      label: "Inferring your aesthetic",    detail: "GMI",               status: "idle", api: "GMI"      },
-  { id: "generate",  label: "Generating your portfolio",   detail: "GMI",               status: "idle", api: "GMI"      },
+  { id: "search",    label: "Searching",                   detail: "Exa Search",        status: "idle", api: "Search"   },
+  { id: "contents",  label: "Fetching contents",           detail: "Exa Contents",      status: "idle", api: "Contents" },
+  { id: "research",  label: "Deep research",               detail: "Exa Research",     status: "idle", api: "Research" },
+  { id: "vibe",      label: "Inferring aesthetic",         detail: "GMI",               status: "idle", api: "GMI"      },
+  { id: "symbol",    label: "Creating symbol",             detail: "GMI",               status: "idle", api: "GMI"      },
+  { id: "images",    label: "Generating images",           detail: "GMI Image",         status: "idle", api: "GMI"      },
+  { id: "generate",  label: "Generating portfolio",        detail: "GMI",               status: "idle", api: "GMI"      },
 ];
