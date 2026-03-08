@@ -25,13 +25,14 @@ if "GMI_API_KEY" not in os.environ or "EXA_API_KEY" not in os.environ:
             load_dotenv(path)
             break
 
-from steps.scrape      import scrape_links
-from steps.search      import search_public_presence
-from steps.answer      import answer_questions
-from steps.research    import research_person
-from steps.infer_vibe  import infer_vibe
-from steps.generate_html import generate_html
-from steps.nudge       import apply_nudge, NUDGE_OPTIONS
+from steps.scrape         import scrape_links
+from steps.search         import search_public_presence
+from steps.answer         import answer_questions
+from steps.research       import research_person
+from steps.infer_vibe     import infer_vibe
+from steps.generate_images import generate_portfolio_images
+from steps.generate_html  import generate_html
+from steps.nudge          import apply_nudge, NUDGE_OPTIONS
 
 # ── Setup ────────────────────────────────────────────────────────────
 OUTPUT_DIR = Path(__file__).parent / "output"
@@ -149,10 +150,17 @@ def run_generate(name: str, context: str, urls: list[str]):
             "typography_style": "clean sans"
         }
 
+    # ── IMAGE GENERATION (optional, in parallel with HTML prep) ─────────
+    images: list[str] = []
+    try:
+        images = generate_portfolio_images(vibe, profile.get("name", ""), max_images=2)
+    except Exception:
+        pass  # continue without images
+
     # ── HTML GENERATION ───────────────────────────────────────────────
     step_start("generate", "Generating your portfolio", "GMI building the HTML")
     try:
-        html = generate_html(profile, vibe)
+        html = generate_html(profile, vibe, images=images if images else None)
         html_path = OUTPUT_DIR / "portfolio.html"
         html_path.write_text(html)
         step_done("generate", "Portfolio ready", summary="HTML generated successfully")

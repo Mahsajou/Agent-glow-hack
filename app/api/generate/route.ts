@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   };
 
   const agentDir = path.join(process.cwd(), "agent");
-  const pythonPath = path.join(process.cwd(), ".venv", "bin", "python3");
+  const pythonPath = path.join(process.cwd(), "venv", "bin", "python3");
   const args = ["run.py", "generate", name, context || "", ...urls];
 
   const proc = spawn(pythonPath, args, {
@@ -30,9 +30,13 @@ export async function POST(req: NextRequest) {
     },
   });
 
+  let stdoutBuffer = "";
   proc.stdout.on("data", (chunk: Buffer) => {
-    const lines = chunk.toString().split("\n").filter(Boolean);
+    stdoutBuffer += chunk.toString();
+    const lines = stdoutBuffer.split("\n");
+    stdoutBuffer = lines.pop() ?? ""; // keep incomplete line for next chunk
     for (const line of lines) {
+      if (!line.trim()) continue;
       try {
         const parsed = JSON.parse(line);
         send(parsed);

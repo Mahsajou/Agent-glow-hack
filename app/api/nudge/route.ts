@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   };
 
   const agentDir = path.join(process.cwd(), "agent");
-  const pythonPath = path.join(process.cwd(), ".venv", "bin", "python3");
+  const pythonPath = path.join(process.cwd(), "venv", "bin", "python3");
 
   const proc = spawn(pythonPath, ["run.py", "nudge", nudgeId], {
     cwd: agentDir,

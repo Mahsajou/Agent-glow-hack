@@ -1,11 +1,17 @@
+import base64
 import os
 import json
+from typing import Optional
+
 import requests
 
 GMI_BASE_URL = "https://api.gmi-serving.com/v1"
 GMI_LLM_MODEL = "google/gemini-3.1-pro-preview"
 GMI_FAST_MODEL = "google/gemini-3-flash-preview"
-GMI_IMAGE_MODEL = "google/gemini-3-pro-image-preview"
+GMI_IMAGE_MODEL = "gemini-3.1-flash-image-preview"
+
+# GMI image API: try OpenAI-compatible /v1/images/generations first
+GMI_IMAGE_URL = "https://api.gmi-serving.com/v1/images/generations"
 
 GMI_MODEL = GMI_LLM_MODEL
 
@@ -64,3 +70,53 @@ def get_gmi_client(model_id: str = None):
 def get_gmi_image_client():
     """Returns a GMI client configured for image generation."""
     return get_gmi_client(GMI_IMAGE_MODEL)
+
+
+def generate_image(
+    prompt: str,
+    aspect_ratio: str = "4:3",
+    resolution: str = "1K",
+    model: str = GMI_IMAGE_MODEL,
+) -> Optional[str]:
+    """
+    Generate an image via GMI Cloud image API (gemini-3.1-flash-image-preview).
+    Returns base64 data URI (data:image/png;base64,...) or None on failure.
+    """
+    api_key = os.environ.get("GMI_API_KEY")
+    if not api_key:
+        return None
+    try:
+        resp = requests.post(
+            GMI_IMAGE_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "prompt": prompt,
+                "aspect_ratio": aspect_ratio,
+                "resolution": resolution,
+            },
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        items = data.get("data") or []
+        if not items:
+            return None
+        img = items[0]
+        b64 = img.get("b64_json")
+        url = img.get("url")
+        mime = img.get("mime_type", "image/png")
+        if b64:
+            return f"data:{mime};base64,{b64}"
+        if url:
+            # Fetch and convert to base64 for embedding in single-file HTML
+            img_resp = requests.get(url, timeout=30)
+            img_resp.raise_for_status()
+            b64 = base64.b64encode(img_resp.content).decode("ascii")
+            return f"data:{mime};base64,{b64}"
+        return None
+    except Exception:
+        return None
