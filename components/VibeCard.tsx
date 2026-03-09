@@ -1,7 +1,7 @@
 "use client";
 
 import { Palette } from "lucide-react";
-import { Vibe } from "@/lib/types";
+import { Vibe } from "@/agent/lib/types";
 
 interface Props {
   vibe: Vibe;

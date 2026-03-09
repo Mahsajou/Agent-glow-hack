@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   const agentDir = path.join(process.cwd(), "agent");
   const pythonPath = path.join(process.cwd(), ".venv", "bin", "python3");
-  const args = ["run.py", "generate", name, context || ""];
+  const args = ["run_direct.py", name, context || ""];
 
   const proc = spawn(pythonPath, args, {
     cwd: agentDir,
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       ...process.env,
       EXA_API_KEY: process.env.EXA_API_KEY!,
       GMI_API_KEY: process.env.GMI_API_KEY!,
-      PYTHONPATH: agentDir,
+      PYTHONPATH: path.join(process.cwd()),
     },
   });
 

@@ -17,15 +17,15 @@ export async function POST(req: NextRequest) {
   };
 
   const agentDir = path.join(process.cwd(), "agent");
-  const pythonPath = path.join(process.cwd(), "venv", "bin", "python3");
+  const pythonPath = path.join(process.cwd(), ".venv", "bin", "python3");
 
-  const proc = spawn(pythonPath, ["run.py", "nudge", nudgeId], {
+  const proc = spawn(pythonPath, ["run_direct.py", "nudge", nudgeId], {
     cwd: agentDir,
     env: {
       ...process.env,
       EXA_API_KEY: process.env.EXA_API_KEY!,
       GMI_API_KEY: process.env.GMI_API_KEY!,
-      PYTHONPATH: agentDir,
+      PYTHONPATH: path.join(process.cwd()),
     },
   });
 

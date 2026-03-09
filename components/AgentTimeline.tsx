@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Circle, Loader, X, Terminal } from "lucide-react";
-import { Step } from "@/lib/types";
+import { Step } from "@/agent/lib/types";
 
 interface Props {
   steps: Step[];

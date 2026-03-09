@@ -7,7 +7,7 @@ import AgentTimeline from "@/components/AgentTimeline";
 import VibeCard from "@/components/VibeCard";
 import NudgePanel from "@/components/NudgePanel";
 import PortfolioPreview from "@/components/PortfolioPreview";
-import { AgentEvent, INITIAL_STEPS, Step, Vibe } from "@/lib/types";
+import { AgentEvent, INITIAL_STEPS, Step, Vibe } from "@/agent/lib/types";
 
 function GeneratePage() {
   const searchParams = useSearchParams();

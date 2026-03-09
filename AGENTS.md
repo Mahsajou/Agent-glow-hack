@@ -4,34 +4,40 @@
 A Next.js app that generates a personalized portfolio from a person's name. The agent searches the web, fetches content, researches the person, infers their aesthetic, generates images, and produces a bespoke HTML portfolio.
 
 ## Pipeline (sequential, file-based)
-1. **Search** — Exa Search: find URLs about the person → `search.json`
-2. **Contents** — Exa Contents: fetch web content from search URLs → `contents.json`
-3. **Research** — GMI LLM: synthesize professional/personal background from contents → `research.json`
-4. **Infer Vibe** — GMI LLM: infer aesthetic from research → `vibe.json`
-5. **Images** — GMI Image: generate banner + moodboard from vibe + research
-6. **HTML** — GMI LLM: generate portfolio from research + vibe + images → `portfolio.html`
+1. **Search** — Exa Search → `search.json`
+2. **Contents** — Exa Contents → `contents.json`
+3. **Research** — Exa Research → `research.json`
+4. **Vibe** — GMI LLM → `vibe.json`
+5. **Symbol** — GMI Image → `symbol.png`
+6. **Images** — GMI Image → `banner.png`, `moodboard.png`
+7. **HTML** — LLM-generated → `portfolio.html`
 
 ## Stack
-- Frontend: Next.js 14 (App Router), React, Tailwind CSS
-- Agent: Python 3 (agent/run.py), emits JSON events for SSE
-- APIs: Exa (exa-py), GMI Cloud (requests for chat + image)
+- Frontend: Next.js 14, React, Tailwind CSS
+- Agent: Python 3 + Temporal (optional)
+- APIs: Exa (agent/lib/exa_client), GMI Cloud (agent/lib/gmi_client)
 
 ## Key files
 ```
-agent/run.py              — Orchestrator, sequential pipeline
-agent/steps/search.py     — Exa Search → search.json
-agent/steps/contents.py   — Exa Contents → contents.json
-agent/steps/research.py   — GMI: contents.json → research.json
-agent/steps/infer_vibe.py — GMI: research.json → vibe.json
-agent/steps/generate_images.py — GMI Image: vibe + research → banner, moodboard
-agent/steps/generate_html.py   — GMI: research + vibe + images → portfolio.html
-agent/steps/nudge.py      — GMI: patch sections of existing HTML
-agent/output/             — search.json, contents.json, research.json, vibe.json, portfolio.html
+agent/lib/exa_client.py   — Exa: search, get_contents, research
+agent/lib/gmi_client.py   — GMI: LLM + Image
+agent/agents/             — search, contents, research, vibe, symbol, images, html, nudge
+agent/activities/         — Temporal activities
+agent/workflows/          — PersonaGenerateWorkflow
+agent/run.py              — Temporal worker (worker | start)
+agent/run_direct.py       — Direct pipeline (used by API for SSE)
+agent/templates/          — portfolio.html
+agent/output/             — search.json, contents.json, research.json, vibe.json, symbol.png, banner.png, moodboard.png, portfolio.html
 ```
 
 ## Usage
 ```bash
-cd agent && python run.py generate "Jane Doe" "ML engineer"
+# Direct (no Temporal)
+cd agent && python run_direct.py "Jane Doe" "ML engineer"
+
+# Temporal
+cd agent && python run.py worker   # run worker
+cd agent && python run.py start "Jane Doe" "ML engineer"  # start workflow
 ```
 
 ## Environment
