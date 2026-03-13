@@ -3,11 +3,11 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (copy first for layer caching)
 COPY agent/requirements.txt agent/requirements.txt
 RUN pip install --no-cache-dir -r agent/requirements.txt
 
-# Copy agent code
+# Copy agent code (agent/output excluded via .dockerignore)
 COPY agent/ agent/
 
 # Output directory for generated artifacts (mount a volume in production for persistence)

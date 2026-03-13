@@ -6,99 +6,203 @@ from pathlib import Path
 
 from temporalio import activity
 
-from agent.agents import (
-    search as search_agent,
-    contents as contents_agent,
-    research as research_agent,
-    vibe as vibe_agent,
-    symbol as symbol_agent,
-    images as images_agent,
-    html as html_agent,
-)
+from agent.config import StorageConfig
+from agent.lib.storage import create_store
 
 
-def _out(output_dir: str) -> Path:
-    return Path(output_dir)
+def _store(output_dir: str):
+    cfg = StorageConfig()
+    return create_store(
+        cfg.backend,
+        output_dir,
+        s3_bucket=cfg.s3_bucket,
+        s3_region=cfg.s3_region,
+        s3_endpoint_url=cfg.s3_endpoint_url,
+    )
+
+
+def _path_for_agents(store):
+    """Get Path for agents. For S3 yields from work_directory context."""
+    from agent.lib.storage import S3Store
+    if isinstance(store, S3Store):
+        return store.work_directory()
+    return _PathContext(store.directory())
+
+
+class _PathContext:
+    """No-op context for FS - just yields the path."""
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def __enter__(self):
+        return self.path
+
+    def __exit__(self, *args):
+        pass
 
 
 @activity.defn
 async def search_activity(name: str, context: str, output_dir: str) -> dict:
     """Search for person's public presence via Exa. Output: search.json."""
     activity.logger.info("Running search for %s", name)
-    p = _out(output_dir) / "search.json"
-    if p.exists():
-        return json.loads(p.read_text())
-    return search_agent.run(name, context, p)
+    store = _store(output_dir)
+    data = store.read_json("search.json")
+    if data is not None:
+        return data
+    from agent.agents import search as search_agent
+    with _path_for_agents(store) as path:
+        return search_agent.run(name, context, path / "search.json")
 
 
 @activity.defn
 async def contents_activity(output_dir: str) -> dict:
     """Fetch page contents via Exa Contents. Output: contents.json."""
-    out = _out(output_dir)
-    search_path = out / "search.json"
-    contents_path = out / "contents.json"
-    if contents_path.exists():
-        return json.loads(contents_path.read_text())
-    return contents_agent.run(search_path, contents_path)
+    activity.logger.info("Running contents for output_dir=%s", output_dir[:80])
+    store = _store(output_dir)
+    if store.exists("contents.json"):
+        return store.read_json("contents.json")
+    search_data = store.read_json("search.json")
+    if search_data is None:
+        raise FileNotFoundError(
+            f"search.json not found in {output_dir}. Ensure search_activity runs and completes before contents_activity."
+        )
+    from agent.agents import contents as contents_agent
+    with _path_for_agents(store) as path:
+        return contents_agent.run(search_data, path / "contents.json")
 
 
 @activity.defn
 async def research_activity(name: str, context: str, output_dir: str) -> dict:
     """Deep research via Exa Research. Output: research.json."""
     activity.logger.info("Running research for %s", name)
-    out = _out(output_dir)
-    rp = out / "research.json"
-    if rp.exists():
-        return json.loads(rp.read_text())
-    return research_agent.run(name, context, rp)
+    store = _store(output_dir)
+    data = store.read_json("research.json")
+    if data is not None:
+        return data
+    from agent.agents import research as research_agent
+    with _path_for_agents(store) as path:
+        return research_agent.run(name, context, path / "research.json")
+
+
+@activity.defn
+async def curate_activity(output_dir: str) -> dict:
+    """Curate research + contents into a unified profile. Output: curated.json."""
+    activity.logger.info("Running curate for output_dir=%s", output_dir[:80])
+    store = _store(output_dir)
+    data = store.read_json("curated.json")
+    if data is not None:
+        return data
+    research = store.read_json("research.json")
+    contents = store.read_json("contents.json")
+    if research is None or contents is None:
+        raise FileNotFoundError(
+            f"research.json and/or contents.json not found in {output_dir}. "
+            "Ensure contents_activity and research_activity complete before curate_activity."
+        )
+    from agent.agents import curate as curate_agent
+    with _path_for_agents(store) as path:
+        return curate_agent.run(research, contents, path / "curated.json")
 
 
 @activity.defn
 async def vibe_activity(output_dir: str) -> dict:
-    """Infer aesthetic from research. Output: vibe.json."""
-    out = _out(output_dir)
-    vp = out / "vibe.json"
-    rp = out / "research.json"
-    if vp.exists():
-        return json.loads(vp.read_text())
-    return vibe_agent.run(rp, vp)
+    """Infer aesthetic from curated profile. Output: vibe.json."""
+    activity.logger.info("Running vibe for output_dir=%s", output_dir[:80])
+    store = _store(output_dir)
+    data = store.read_json("vibe.json")
+    if data is not None:
+        return data
+    curated = store.read_json("curated.json")
+    if curated is None:
+        raise FileNotFoundError(
+            f"curated.json not found in {output_dir}. Ensure curate_activity runs and completes before vibe_activity."
+        )
+    from agent.agents import vibe as vibe_agent
+    with _path_for_agents(store) as path:
+        return vibe_agent.run(curated, path / "vibe.json")
 
 
 @activity.defn
 async def symbol_activity(output_dir: str) -> str:
-    """Generate brand symbol image. Output: symbol.png. Returns data URI."""
-    out = _out(output_dir)
-    vp, rp, sp = out / "vibe.json", out / "research.json", out / "symbol.png"
-    if sp.exists():
-        return f"data:image/png;base64,{base64.b64encode(sp.read_bytes()).decode('ascii')}"
-    return symbol_agent.run(vp, rp, sp)
+    """Generate brand symbol image. Output: symbol.png. Returns filename for html_activity to read."""
+    store = _store(output_dir)
+    if store.exists("symbol.png"):
+        return "symbol.png"
+    vibe = store.read_json("vibe.json")
+    curated = store.read_json("curated.json")
+    if vibe is None:
+        raise FileNotFoundError(f"vibe.json not found in {output_dir}. Ensure vibe_activity runs before symbol_activity.")
+    if curated is None:
+        raise FileNotFoundError(f"curated.json not found in {output_dir}. Ensure curate_activity runs before symbol_activity.")
+    from agent.agents import symbol as symbol_agent
+    with _path_for_agents(store) as path:
+        symbol_agent.run(vibe, curated, path / "symbol.png")
+    return "symbol.png" if store.exists("symbol.png") else ""
 
 
 @activity.defn
 async def images_activity(output_dir: str) -> tuple[list[str], str | None]:
-    """Generate banner and moodboard images. Returns (data_uris, error)."""
-    out = _out(output_dir)
-    vp, rp = out / "vibe.json", out / "research.json"
-    banner, mood = out / "banner.png", out / "moodboard.png"
-    imgs: list[str] = []
-    if banner.exists():
-        imgs.append(f"data:image/png;base64,{base64.b64encode(banner.read_bytes()).decode('ascii')}")
-    if mood.exists():
-        imgs.append(f"data:image/png;base64,{base64.b64encode(mood.read_bytes()).decode('ascii')}")
-    if imgs:
-        return imgs, None
-    imgs, err = images_agent.run(vp, rp, out, max_images=2)
-    return imgs, err
+    """Generate banner and moodboard images. Returns (filenames, error)."""
+    activity.logger.info("Running images for output_dir=%s", output_dir[:80])
+    store = _store(output_dir)
+    filenames: list[str] = []
+    if store.exists("banner.png"):
+        filenames.append("banner.png")
+    if store.exists("moodboard.png"):
+        filenames.append("moodboard.png")
+    if filenames:
+        return filenames, None
+    vibe = store.read_json("vibe.json")
+    curated = store.read_json("curated.json")
+    if vibe is None:
+        raise FileNotFoundError(f"vibe.json not found in {output_dir}. Ensure vibe_activity runs before images_activity.")
+    if curated is None:
+        raise FileNotFoundError(f"curated.json not found in {output_dir}. Ensure curate_activity runs before images_activity.")
+    from agent.agents import images as images_agent
+    with _path_for_agents(store) as path:
+        _, err = images_agent.run(vibe, curated, path, max_images=2)
+    filenames = []
+    if store.exists("banner.png"):
+        filenames.append("banner.png")
+    if store.exists("moodboard.png"):
+        filenames.append("moodboard.png")
+    return filenames, err
+
+
+def _blob_to_data_uri(data: bytes) -> str:
+    """Convert image bytes to data URI."""
+    return f"data:image/png;base64,{base64.b64encode(data).decode('ascii')}"
 
 
 @activity.defn
-async def html_activity(output_dir: str, images: list[str], symbol_uri: str) -> str:
-    """Generate portfolio HTML from template + images."""
-    out = _out(output_dir)
-    hp = out / "portfolio.html"
-    rp, vp = out / "research.json", out / "vibe.json"
-    if hp.exists():
-        html = hp.read_text()
-        if "data:image" in html:
-            return html
-    return html_agent.run(rp, vp, hp, images=images or None, symbol_img=symbol_uri or None)
+async def html_activity(output_dir: str, image_filenames: list[str], symbol_filename: str) -> str:
+    """Generate portfolio HTML. Returns empty to avoid Temporal payload limit."""
+    activity.logger.info("Running html output_dir=%s images=%d symbol=%s", output_dir[:80], len(image_filenames), bool(symbol_filename))
+    store = _store(output_dir)
+    if store.exists("portfolio.html"):
+        html = store.read_blob("portfolio.html")
+        if html and b"data:image" in html:
+            return ""
+    images: list[str] | None = None
+    if image_filenames:
+        images = []
+        for f in image_filenames:
+            b = store.read_blob(f)
+            if b is not None:
+                images.append(_blob_to_data_uri(b))
+    symbol_uri = None
+    if symbol_filename:
+        b = store.read_blob(symbol_filename)
+        if b is not None:
+            symbol_uri = _blob_to_data_uri(b)
+    curated = store.read_json("curated.json")
+    vibe = store.read_json("vibe.json")
+    if curated is None:
+        raise FileNotFoundError(f"curated.json not found in {output_dir}. Ensure curate_activity runs before html_activity.")
+    if vibe is None:
+        raise FileNotFoundError(f"vibe.json not found in {output_dir}. Ensure vibe_activity runs before html_activity.")
+    from agent.agents import html as html_agent
+    with _path_for_agents(store) as path:
+        html_agent.run(curated, vibe, path / "portfolio.html", images=images, symbol_img=symbol_uri)
+    return ""

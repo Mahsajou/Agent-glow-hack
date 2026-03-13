@@ -3,6 +3,9 @@
 import json
 
 from agent.lib.gmi_client import GmiClient, GMI_LLM_MODEL
+from agent.lib.logger import get_logger
+
+logger = get_logger("agent.agents.nudge")
 
 NUDGE_OPTIONS = [
     {"id": "hero", "label": "Regenerate hero", "icon": "Sparkles"},
@@ -45,4 +48,5 @@ Return the complete updated HTML. Only valid HTML, no markdown."""
     i = out.lower().find("<!doctype")
     if i > 0:
         out = out[i:]
+    logger.info("nudge done len=%d", len(out))
     return out

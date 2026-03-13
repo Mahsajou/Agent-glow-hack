@@ -1,4 +1,6 @@
-"""HTML agent — Generate template, inject images, validate, fix until valid."""
+"""HTML agent — Generate template, inject images, validate, fix until valid.
+Portfolio structure aligned with 12 aspects: identity, skills, projects, process,
+impact, range, depth, credibility, journey, personality, communication, future."""
 
 import json
 import re
@@ -7,6 +9,27 @@ from pathlib import Path
 from lxml import html as lxml_html
 
 from agent.lib.gmi_client import GmiClient, GMI_LLM_MODEL
+from agent.lib.logger import get_logger
+
+logger = get_logger("agent.agents.html")
+
+# Portfolio section spec — maps to the 12 aspects
+SECTIONS_SPEC = """
+REQUIRED SECTIONS (align with portfolio framework):
+
+1. Hero — name, tagline, mission/identity (banner img)
+2. About — identity, values, focus_areas, personal_philosophy, personality
+3. Skills & Expertise — skills, tools_technologies, methodologies, domain_expertise
+4. Key Projects — for each: name, description, outcome, impact_metrics, process_notes, url
+5. Impact & Results — achievements, impact_statements (quantified)
+6. Range & Depth — industries, project_types, specialization
+7. Credibility — awards, publications, talks_presentations, certifications, testimonials
+8. Journey — career_highlights, learning_milestones
+9. Writing & Thinking — writing_samples, communication
+10. Future Vision — future_vision, research_interests
+11. Contact & Collaboration — social_links
+12. Footer
+"""
 
 # Placeholders for image URLs (used in img src only — never inject HTML blocks)
 PLACEHOLDER_BANNER = "{{BANNER_URL}}"
@@ -19,6 +42,18 @@ EMPTY_IMG_DATA_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYA
 MAX_VALIDATE_ATTEMPTS = 3
 
 
+def _normalize_projects(research: dict) -> list[dict]:
+    """Ensure projects are structured. Fallback from notable_projects if needed."""
+    projects = research.get("projects") or []
+    if projects and isinstance(projects[0], dict):
+        return projects
+    fallback = research.get("notable_projects") or []
+    return [
+        {"name": p, "description": p, "outcome": "", "impact_metrics": [], "url": ""}
+        for p in fallback
+    ]
+
+
 def _generate_template(client: GmiClient, research: dict, vibe: dict) -> str:
     """Step 1: Generate an HTML template with URL placeholders (not full HTML blocks)."""
     fonts = vibe.get("font_suggestions", {})
@@ -26,17 +61,26 @@ def _generate_template(client: GmiClient, research: dict, vibe: dict) -> str:
     display_font = fonts.get("display", "Inter")
     body_font = fonts.get("body", "Inter")
     mono_font = fonts.get("mono", "JetBrains Mono")
+    layout_density = vibe.get("layout_density", "balanced")
+    tone = vibe.get("tone", vibe.get("personality_match", "professional"))
+
+    # Normalize projects for the prompt
+    projects = _normalize_projects(research)
+    research_for_prompt = {**research, "projects": projects}
 
     prompt = f"""You are a world-class frontend developer. Generate a complete, single-file HTML portfolio TEMPLATE.
 
-PERSON'S BACKGROUND (use as content source):
-{json.dumps(research, indent=2)}
+PERSON'S BACKGROUND (use as content source — use projects array for structured project data):
+{json.dumps(research_for_prompt, indent=2)}
+
+{SECTIONS_SPEC}
 
 DESIGN DIRECTION:
 - Vibe: {vibe.get("vibe_summary", "")}
 - Theme: {vibe.get("theme", "dark")}
 - Typography: {vibe.get("typography_style", "")}, layout: {vibe.get("layout_style", "")}
-- Personality: {vibe.get("personality_match", "")}
+- Layout density: {layout_density} — project-heavy = more project cards, story-heavy = more narrative
+- Tone: {tone}
 - Fonts: display={display_font}, body={body_font}, mono={mono_font}
 - Colors: bg={colors.get("background","#0a0a0a")}, accent={colors.get("accent","#6366f1")}
 
@@ -47,7 +91,8 @@ CRITICAL - IMAGE PLACEHOLDERS (use ONLY inside img src attributes; they will be 
 
 RULES:
 - Put placeholders ONLY as the value of src= in img tags. Example: src="{PLACEHOLDER_BANNER}" NOT src="{{something}}"
-- Sections: Hero (banner img), About (moodboard img), Projects, Skills, Contact, Footer
+- Include all sections that have data; omit empty ones
+- For each project: show name, outcome, impact_metrics. Link to url when available
 - Single self-contained HTML, inline CSS, Google Fonts @import
 - Use ONLY info from the person's background — never invent
 - Mobile responsive
@@ -121,8 +166,8 @@ HTML to fix:
 
 
 def run(
-    research_path: Path,
-    vibe_path: Path,
+    research: dict,
+    vibe: dict,
     output_path: Path,
     images: list | None = None,
     symbol_img: str | None = None,
@@ -133,8 +178,6 @@ def run(
     3. Validate HTML
     4. Fix and repeat until valid
     """
-    research = json.loads(research_path.read_text())
-    vibe = json.loads(vibe_path.read_text())
     if research.get("error"):
         research = {"full_name": "Portfolio", "bio": "Error loading profile."}
 
@@ -151,8 +194,10 @@ def run(
         valid, error = _validate_html(html)
         if valid:
             break
+        logger.warning("html validate attempt=%d error=%s", attempt + 1, error)
         if attempt < MAX_VALIDATE_ATTEMPTS - 1:
             html = _fix_html(client, html, error)
 
+    logger.info("html done len=%d", len(html))
     output_path.write_text(html)
     return html

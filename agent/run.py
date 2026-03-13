@@ -9,15 +9,18 @@ Usage:
 """
 
 import asyncio
+import logging
 import os
-import re
 import sys
+import uuid
 from pathlib import Path
 
-# Ensure project root on path
+# Ensure project root on path before any agent imports
 _root = Path(__file__).resolve().parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
+
+from agent.lib.logger import get_logger
 
 # Load env before imports
 if "GMI_API_KEY" not in os.environ or "EXA_API_KEY" not in os.environ:
@@ -36,6 +39,7 @@ from agent.activities.generate_activities import (
     search_activity,
     contents_activity,
     research_activity,
+    curate_activity,
     vibe_activity,
     symbol_activity,
     images_activity,
@@ -48,20 +52,22 @@ OUTPUT_DIR = Path(__file__).parent / "output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 CONFIG = TemporalConfig()
+logger = get_logger("agent.run")
 
-
-def _workflow_id(slug: str) -> str:
-    """Generate a deterministic workflow ID from a slug."""
-    safe = re.sub(r"[^a-z0-9-]", "-", slug.lower())[:80]
-    return f"persona-{safe}-{hash(slug) % 100000:05d}"
+# Base prefix for output (fs: local dir; s3: key prefix). Workflow appends /{run_id}.
+# Use AGENT_OUTPUT_DIR for S3; otherwise agent/output for local fs.
+BASE_PREFIX = os.environ.get("AGENT_OUTPUT_DIR", str(OUTPUT_DIR))
 
 
 async def run_worker() -> None:
     """Run the Temporal worker."""
+    logger.info("Connecting to Temporal host=%s namespace=%s tls=%s", CONFIG.host, CONFIG.namespace, CONFIG.tls)
     client = await Client.connect(
         CONFIG.host,
         namespace=CONFIG.namespace,
+        tls=CONFIG.tls,
     )
+    logger.info("Temporal connected, starting worker task_queue=%s", CONFIG.task_queue)
     worker = Worker(
         client,
         task_queue=CONFIG.task_queue,
@@ -70,6 +76,7 @@ async def run_worker() -> None:
             search_activity,
             contents_activity,
             research_activity,
+            curate_activity,
             vibe_activity,
             symbol_activity,
             images_activity,
@@ -77,46 +84,48 @@ async def run_worker() -> None:
             nudge_activity,
         ],
     )
-    print(f"Worker started. Task queue: {CONFIG.task_queue}", flush=True)
+    logger.info("Worker started, polling for tasks on queue=%s base_prefix=%s", CONFIG.task_queue, BASE_PREFIX)
     await worker.run()
 
 
 async def start_generate(name: str, context: str = "") -> dict:
-    """Start a generate workflow and wait for result."""
-    client = await Client.connect(CONFIG.host, namespace=CONFIG.namespace)
-    wf_id = _workflow_id(f"generate-{name}-{context}")
+    """Start a generate workflow and wait for result. output_dir = BASE_PREFIX/{run_id}."""
+    client = await Client.connect(CONFIG.host, namespace=CONFIG.namespace, tls=CONFIG.tls)
+    wf_id = f"persona-generate-{uuid.uuid4()}"
     handle = await client.start_workflow(
         PersonaGenerateWorkflow.run,
-        args=[name, context, str(OUTPUT_DIR)],
+        args=[name, context, BASE_PREFIX],
         id=wf_id,
         task_queue=CONFIG.task_queue,
     )
-    print(f"Started workflow: {handle.id}", flush=True)
+    logger.info("Started workflow id=%s name=%s", handle.id, name)
     result = await handle.result()
+    output_dir = result.get("output_dir", "")
     html_len = len(result.get("html", ""))
-    print(f"Done. HTML length: {html_len}", flush=True)
+    logger.info("Workflow complete id=%s output_dir=%s html_len=%d", handle.id, output_dir, html_len)
     return result
 
 
-async def start_nudge(nudge_id: str) -> dict:
-    """Start a nudge workflow and wait for result."""
-    client = await Client.connect(CONFIG.host, namespace=CONFIG.namespace)
-    wf_id = _workflow_id(f"nudge-{nudge_id}")
+async def start_nudge(nudge_id: str, output_dir: str) -> dict:
+    """Start a nudge workflow. output_dir from generate result (e.g. BASE_PREFIX/{run_id})."""
+    client = await Client.connect(CONFIG.host, namespace=CONFIG.namespace, tls=CONFIG.tls)
+    wf_id = f"persona-nudge-{uuid.uuid4()}"
     handle = await client.start_workflow(
         PersonaNudgeWorkflow.run,
-        args=[nudge_id, str(OUTPUT_DIR)],
+        args=[nudge_id, output_dir],
         id=wf_id,
         task_queue=CONFIG.task_queue,
     )
-    print(f"Started workflow: {handle.id}", flush=True)
+    logger.info("Started nudge workflow id=%s nudge_id=%s output_dir=%s", handle.id, nudge_id, output_dir)
     result = await handle.result()
-    print(f"Done. HTML length: {len(result.get('html', ''))}", flush=True)
+    html_len = len(result.get("html", ""))
+    logger.info("Nudge complete id=%s html_len=%d", handle.id, html_len)
     return result
 
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python run.py worker | start <name> [context] | nudge <nudge_id>")
+        print("Usage: python run.py worker | start <name> [context] | nudge <nudge_id> <output_dir>")
         sys.exit(1)
 
     cmd = sys.argv[1].lower()
@@ -130,11 +139,12 @@ def main() -> None:
         context = sys.argv[3] if len(sys.argv) > 3 else ""
         asyncio.run(start_generate(name, context))
     elif cmd == "nudge":
-        if len(sys.argv) < 3:
-            print("Usage: python run.py nudge <nudge_id>")
+        if len(sys.argv) < 4:
+            print("Usage: python run.py nudge <nudge_id> <output_dir>  # output_dir from generate result")
             sys.exit(1)
         nudge_id = sys.argv[2]
-        asyncio.run(start_nudge(nudge_id))
+        output_dir = sys.argv[3]
+        asyncio.run(start_nudge(nudge_id, output_dir))
     else:
         print("Unknown command. Use: worker | start | nudge")
         sys.exit(1)

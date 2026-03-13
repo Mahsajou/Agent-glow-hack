@@ -1,0 +1,33 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: persona-minio
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console UI
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+  minio-init:
+    image: minio/mc:latest
+    container_name: persona-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        mc alias set myminio http://minio:9000 minioadmin minioadmin &&
+        mc mb myminio/persona --ignore-existing &&
+        echo 'Bucket persona ready' &&
+        exit 0;
+        sleep 2;
+      done;
+      exit 1;
+      "
+    restart: "no"
+
+volumes:
+  minio_data:

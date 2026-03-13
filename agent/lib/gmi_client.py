@@ -39,19 +39,29 @@ class GmiClient:
         self._api_key = api_key or os.environ["GMI_API_KEY"]
 
     def generate_content(self, prompt: str, model: str = GMI_LLM_MODEL) -> str:
-        resp = requests.post(
-            f"{GMI_BASE_URL}/chat/completions",
-            headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-            json={
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 8192,
-                "temperature": 0.7,
-            },
-            timeout=300,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        max_retries = 5
+        for attempt in range(max_retries):
+            resp = requests.post(
+                f"{GMI_BASE_URL}/chat/completions",
+                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 8192,
+                    "temperature": 0.7,
+                },
+                timeout=300,
+            )
+            if resp.status_code == 429 and attempt < max_retries - 1:
+                retry_after = 2 ** (attempt + 1)
+                try:
+                    retry_after = min(int(resp.headers.get("Retry-After", retry_after)), 60)
+                except (TypeError, ValueError):
+                    pass
+                time.sleep(retry_after)
+                continue
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
 
     def generate_image(
         self,
@@ -70,21 +80,39 @@ class GmiClient:
         body = {"model": model, "payload": payload}
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
-        try:
-            resp = requests.post(GMI_IMAGE_URL, headers=headers, json=body, timeout=60)
-            resp.raise_for_status()
-            data = resp.json()
-        except requests.RequestException as e:
-            err = str(e)
-            if hasattr(e, "response") and e.response:
-                try:
-                    b = e.response.json()
-                    err = b.get("error", b.get("message", err))
-                    if isinstance(err, dict):
-                        err = err.get("message", str(err))
-                except Exception:
-                    pass
-            return None, f"Create failed: {err}"
+        # Initial create with simple retries for transient / rate limit errors
+        max_retries = 4
+        last_err: Optional[str] = None
+        for attempt in range(max_retries):
+            try:
+                resp = requests.post(GMI_IMAGE_URL, headers=headers, json=body, timeout=60)
+                if resp.status_code == 429 and attempt < max_retries - 1:
+                    # Exponential backoff with cap
+                    retry_after = 2 ** (attempt + 1)
+                    try:
+                        retry_after = min(int(resp.headers.get("Retry-After", retry_after)), 60)
+                    except (TypeError, ValueError):
+                        pass
+                    time.sleep(retry_after)
+                    continue
+                resp.raise_for_status()
+                data = resp.json()
+                break
+            except requests.RequestException as e:  # noqa: PERF203
+                err = str(e)
+                if hasattr(e, "response") and e.response is not None:
+                    try:
+                        b = e.response.json()
+                        err = b.get("error", b.get("message", err))
+                        if isinstance(err, dict):
+                            err = err.get("message", str(err))
+                    except Exception:
+                        pass
+                last_err = err
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** (attempt + 1))
+                    continue
+                return None, f"Create failed: {last_err or 'unknown error'}"
 
         rid = data.get("request_id") or data.get("id")
         if not rid:

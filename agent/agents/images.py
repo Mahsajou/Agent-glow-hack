@@ -1,16 +1,16 @@
 """Images agent — GMI image. Output: banner.png, moodboard.png"""
 
 import base64
-import json
 from pathlib import Path
 from typing import Optional
 
 from agent.lib.gmi_client import GmiClient
+from agent.lib.logger import get_logger
+
+logger = get_logger("agent.agents.images")
 
 
-def run(vibe_path: Path, research_path: Path, output_dir: Path, max_images: int = 2) -> tuple[list[str], Optional[str]]:
-    vibe = json.loads(vibe_path.read_text())
-    research = json.loads(research_path.read_text())
+def run(vibe: dict, research: dict, output_dir: Path, max_images: int = 2) -> tuple[list[str], Optional[str]]:
     c = vibe.get("color_palette", {})
     accent = c.get("accent", "#6366f1")
     personality = vibe.get("personality_match", "professional")
@@ -32,5 +32,7 @@ def run(vibe_path: Path, research_path: Path, output_dir: Path, max_images: int 
                 out = output_dir / ("banner.png" if len(images) == 1 else "moodboard.png")
                 out.write_bytes(base64.b64decode(b64))
         else:
+            logger.warning("images prompt failed err=%s", err)
             last_err = err
+    logger.info("images done count=%d err=%s", len(images), last_err)
     return images, last_err if not images else None
