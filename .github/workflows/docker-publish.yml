@@ -37,5 +37,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner) }}/agent-glow-hack:latest
-            ghcr.io/${{ toLower(github.repository_owner) }}/agent-glow-hack:${{ github.sha }}
+            ghcr.io/mahsajou/agent-glow-hack:latest
+            ghcr.io/mahsajou/agent-glow-hack:${{ github.sha }}
