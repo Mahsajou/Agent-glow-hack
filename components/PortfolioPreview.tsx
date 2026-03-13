@@ -13,7 +13,7 @@ export default function PortfolioPreview({ html, isLoading }: Props) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "portfolio.html";
+    a.download = "portfolio.jsx";
     a.click();
     URL.revokeObjectURL(url);
   };

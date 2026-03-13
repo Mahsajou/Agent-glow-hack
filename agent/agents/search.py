@@ -36,7 +36,18 @@ def _build_queries(name: str, context: str) -> list[str]:
         f'"{name}" blog writing articles essays',
         f'"{name}" interview philosophy values',
     ]
-    return base + credibility + projects + personality
+    # Broader internet presence: social + creator platforms
+    social_and_presence = [
+        f'"{name}" personal website portfolio site',
+        f'"{name}" Twitter OR X profile',
+        f'"{name}" Instagram profile',
+        f'"{name}" YouTube channel',
+        f'"{name}" Medium blog',
+        f'"{name}" Substack newsletter',
+        f'"{name}" Dribbble portfolio',
+        f'"{name}" Behance portfolio',
+    ]
+    return base + credibility + projects + personality + social_and_presence
 
 
 def run(name: str, context: str, output_path: Path) -> dict:

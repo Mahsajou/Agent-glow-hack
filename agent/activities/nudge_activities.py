@@ -19,19 +19,19 @@ def _store(output_dir: str):
 
 @activity.defn
 async def nudge_activity(nudge_id: str, output_dir: str) -> str:
-    """Apply nudge, write portfolio.html. Returns empty to avoid Temporal payload limit."""
+    """Apply nudge, write portfolio.jsx. Returns empty to avoid Temporal payload limit."""
     activity.logger.info("Running nudge nudge_id=%s output_dir=%s", nudge_id, output_dir[:80])
     from agent.agents import nudge as nudge_agent
 
     store = _store(output_dir)
     research = store.read_json("research.json")
     vibe = store.read_json("vibe.json")
-    html_blob = store.read_blob("portfolio.html")
+    html_blob = store.read_blob("portfolio.jsx")
     if research is None or vibe is None or html_blob is None:
         return ""
     html = html_blob.decode("utf-8")
     new_html = nudge_agent.run(nudge_id, html, research, vibe)
-    store.write_blob("portfolio.html", new_html.encode("utf-8"))
+    store.write_blob("portfolio.jsx", new_html.encode("utf-8"))
     return ""
 
 

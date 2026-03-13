@@ -10,7 +10,7 @@ A Next.js app that generates a personalized portfolio from a person's name. The 
 4. **Vibe** — GMI LLM → `vibe.json`
 5. **Symbol** — GMI Image → `symbol.png`
 6. **Images** — GMI Image → `banner.png`, `moodboard.png`
-7. **HTML** — LLM-generated → `portfolio.html`
+7. **HTML** — LLM-generated → `portfolio.jsx`
 
 ## Stack
 - Frontend: Next.js 14, React, Tailwind CSS
@@ -25,8 +25,8 @@ agent/agents/             — search, contents, research, vibe, symbol, images, 
 agent/activities/         — Temporal activities
 agent/workflows/          — PersonaGenerateWorkflow
 agent/run.py              — Temporal worker (worker | start)
-agent/templates/          — portfolio.html
-agent/output/             — search.json, contents.json, research.json, vibe.json, symbol.png, banner.png, moodboard.png, portfolio.html
+agent/templates/          — portfolio.jsx
+agent/output/             — search.json, contents.json, research.json, vibe.json, symbol.png, banner.png, moodboard.png, portfolio.jsx
 ```
 
 ## Usage
@@ -41,7 +41,7 @@ Requires EXA_API_KEY and GMI_API_KEY in .env.local
 Optional: LOG_LEVEL (debug, info, warn, error) — controls agent log verbosity; default info
 
 ### Storage backend
-Workflow artifacts (search.json, portfolio.html, etc.) are stored via `agent/lib/storage.py`.
+Workflow artifacts (search.json, portfolio.jsx, etc.) are stored via `agent/lib/storage.py`.
 
 - **STORAGE_BACKEND** — `fs` (default) or `s3`
 - **fs**: Uses `output_dir` as the local path

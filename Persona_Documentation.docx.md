@@ -38,7 +38,7 @@ Persona is a Next.js 14 application with a Python agent backend. The frontend co
 
 ## **2.1 System Diagram**
 
-|   Browser (Next.js frontend)       │       │  POST /api/generate  (SSE stream)       ▼   Next.js API Route       │  spawn child\_process       ▼   Python agent/run.py       │       ├─── \[PARALLEL\] ──────────────────────────────       │    scrape.py    →  Exa Contents API       │    search.py    →  Exa Search API       │    answer.py    →  Exa Answer API       │       ├─── \[SEQUENTIAL\] ─────────────────────────────       │    research.py  →  Exa Research API (async poll)       │       ├─── infer\_vibe.py   →  Gemini (creative director)       │       └─── generate\_html.py →  Gemini (frontend developer)                               →  portfolio.html |
+|   Browser (Next.js frontend)       │       │  POST /api/generate  (SSE stream)       ▼   Next.js API Route       │  spawn child\_process       ▼   Python agent/run.py       │       ├─── \[PARALLEL\] ──────────────────────────────       │    scrape.py    →  Exa Contents API       │    search.py    →  Exa Search API       │    answer.py    →  Exa Answer API       │       ├─── \[SEQUENTIAL\] ─────────────────────────────       │    research.py  →  Exa Research API (async poll)       │       ├─── infer\_vibe.py   →  Gemini (creative director)       │       └─── generate\_html.py →  Gemini (frontend developer)                               →  portfolio.jsx |
 | :---- |
 
 ## **2.2 Tech Stack**
@@ -78,7 +78,7 @@ When the user submits their name and links, the agent runs a 6-step pipeline. St
 | 5 | Infer Visual Aesthetic  Gemini (creative director) Reads the full consolidated profile and acts as a creative director. Analyzes signals: domain type, writing tone from samples, personality notes, type of work, aesthetic preferences found online. Returns a structured vibe spec with exact hex colors, font names, layout style, motion style, and personality match. |
 | :---: | :---- |
 
-| 6 | Generate Portfolio HTML  Gemini (frontend developer) Takes the profile and vibe spec as a detailed creative brief and generates a complete, single-file HTML portfolio. Imports fonts from Google Fonts, uses the exact color palette, implements scroll animations matching the motion style, includes all 5 sections, and uses only data found in the profile. |
+| 6 | Generate Portfolio JSX  Gemini (frontend developer) Takes the profile and vibe spec as a detailed creative brief and generates a complete, single-file JSX portfolio (stored as portfolio.jsx but containing full HTML markup). Imports fonts from Google Fonts, uses the exact color palette, implements scroll animations matching the motion style, includes all 5 sections, and uses only data found in the profile. |
 | :---: | :---- |
 
 ## **4.2 Nudge Flow**
@@ -181,7 +181,7 @@ The main experience. Split layout: left panel shows agent state, right panel sho
 
 The Python agent can be run directly without the Next.js server. This is useful for debugging individual steps or testing with new profiles.
 
-| cd agent   \# Run full generation python run.py generate 'Jane Doe' 'ML engineer' \\   https://github.com/janedoe \\   https://linkedin.com/in/janedoe   \# Inspect outputs cat output/profile.json   \# full research profile cat output/vibe.json      \# inferred design spec open output/portfolio.html  \# generated portfolio   \# Apply a nudge to existing output python run.py nudge colors python run.py nudge hero python run.py nudge minimal |
+| cd agent   \# Run full generation python run.py generate 'Jane Doe' 'ML engineer' \\   https://github.com/janedoe \\   https://linkedin.com/in/janedoe   \# Inspect outputs cat output/profile.json   \# full research profile cat output/vibe.json      \# inferred design spec open output/portfolio.jsx  \# generated portfolio   \# Apply a nudge to existing output python run.py nudge colors python run.py nudge hero python run.py nudge minimal |
 | :---- |
 
 # **9\. Known Issues & Planned Improvements**
@@ -207,7 +207,7 @@ The Python agent can be run directly without the Next.js server. This is useful 
 | Step elapsed timers | AgentTimeline should show elapsed time per step — start a timer on step\_start, display seconds on step\_done. |
 | :---- | :---- |
 | **Nudge skeleton state** | PortfolioPreview shows opacity 50% during nudge. Should show a proper skeleton overlay instead. |
-| **Refresh re-runs agent** | If the user refreshes /generate, the agent starts over. Should detect existing output/portfolio.html and offer to load it. |
+| **Refresh re-runs agent** | If the user refreshes /generate, the agent starts over. Should detect existing output/portfolio.jsx and offer to load it. |
 | **Start over button** | No way to reset and go back to the input form cleanly. Should add a 'Start over' button that clears agent output state. |
 | **VibeCard animation** | VibeCard should animate in with a slide-up transition when vibe\_inferred fires, not just appear instantly. |
 | **Staggered step entrance** | All AgentTimeline steps appear at once on mount. Should stagger their entrance with animation-delay for a cleaner reveal. |

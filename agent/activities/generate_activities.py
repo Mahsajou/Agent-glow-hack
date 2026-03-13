@@ -177,11 +177,11 @@ def _blob_to_data_uri(data: bytes) -> str:
 
 @activity.defn
 async def html_activity(output_dir: str, image_filenames: list[str], symbol_filename: str) -> str:
-    """Generate portfolio HTML. Returns empty to avoid Temporal payload limit."""
+    """Generate portfolio markup (stored as portfolio.jsx). Returns empty to avoid Temporal payload limit."""
     activity.logger.info("Running html output_dir=%s images=%d symbol=%s", output_dir[:80], len(image_filenames), bool(symbol_filename))
     store = _store(output_dir)
-    if store.exists("portfolio.html"):
-        html = store.read_blob("portfolio.html")
+    if store.exists("portfolio.jsx"):
+        html = store.read_blob("portfolio.jsx")
         if html and b"data:image" in html:
             return ""
     images: list[str] | None = None
@@ -204,5 +204,5 @@ async def html_activity(output_dir: str, image_filenames: list[str], symbol_file
         raise FileNotFoundError(f"vibe.json not found in {output_dir}. Ensure vibe_activity runs before html_activity.")
     from agent.agents import html as html_agent
     with _path_for_agents(store) as path:
-        html_agent.run(curated, vibe, path / "portfolio.html", images=images, symbol_img=symbol_uri)
+        html_agent.run(curated, vibe, path / "portfolio.jsx", images=images, symbol_img=symbol_uri)
     return ""
