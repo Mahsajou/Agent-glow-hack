@@ -12,8 +12,8 @@ from typing import Optional
 import requests
 
 GMI_BASE_URL = "https://api.gmi-serving.com/v1"
-GMI_LLM_MODEL = "google/gemini-3.1-pro-preview"
-GMI_IMAGE_MODEL = "gemini-3.1-flash-image-preview"
+GMI_LLM_MODEL = os.environ.get("GMI_LLM_MODEL", "google/gemini-3.1-pro-preview")
+GMI_IMAGE_MODEL = os.environ.get("GMI_IMAGE_MODEL", "gemini-3.1-flash-image-preview")
 GMI_IMAGE_URL = "https://console.gmicloud.ai/api/v1/ie/requestqueue/apikey/requests"
 
 
