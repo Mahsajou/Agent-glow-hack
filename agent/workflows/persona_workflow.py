@@ -7,7 +7,7 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 from agent.config import ActivityTimeouts, DEFAULT_RETRY_POLICY
-from agent.types import GenerateInput, GenerateResult, NudgeInput, NudgeResult
+from agent.wf_types import GenerateInput, GenerateResult, NudgeInput, NudgeResult
 
 with workflow.unsafe.imports_passed_through():
     from agent.activities.generate_activities import (

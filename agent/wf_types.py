@@ -9,6 +9,7 @@ from typing import Any
 @dataclass(frozen=True)
 class GenerateInput:
     """Input for PersonaGenerateWorkflow."""
+
     name: str
     context: str = ""
     output_dir: str = ""
@@ -17,6 +18,7 @@ class GenerateInput:
 @dataclass
 class GenerateResult:
     """Result of PersonaGenerateWorkflow."""
+
     html: str
     output_dir: str
     images_count: int = 0
@@ -28,6 +30,7 @@ class GenerateResult:
 @dataclass(frozen=True)
 class NudgeInput:
     """Input for PersonaNudgeWorkflow."""
+
     nudge_id: str
     output_dir: str
 
@@ -35,6 +38,7 @@ class NudgeInput:
 @dataclass
 class NudgeResult:
     """Result of PersonaNudgeWorkflow."""
+
     html: str
     nudge_id: str
     output_dir: str
@@ -55,3 +59,4 @@ class HtmlParams:
     output_dir: str
     images: list[str] = field(default_factory=list)
     symbol_uri: str = ""
+
