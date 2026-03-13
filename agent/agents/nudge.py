@@ -1,8 +1,8 @@
-"""Nudge agent — GMI LLM to patch HTML."""
+"""Nudge agent — OpenAI LLM to patch HTML."""
 
 import json
 
-from agent.lib.gmi_client import GmiClient, GMI_LLM_MODEL
+from agent.lib.openai_client import OpenAIClient, OPENAI_LLM_MODEL
 from agent.lib.logger import get_logger
 
 logger = get_logger("agent.agents.nudge")
@@ -40,8 +40,8 @@ CURRENT HTML:
 {html}
 
 Return the complete updated HTML. Only valid HTML, no markdown."""
-    client = GmiClient()
-    out = client.generate_content(prompt, model=GMI_LLM_MODEL)
+    client = OpenAIClient()
+    out = client.generate_content(prompt, model=OPENAI_LLM_MODEL)
     out = out.strip()
     if out.startswith("```"):
         out = out.split("\n", 1)[1].rsplit("```", 1)[0].strip()

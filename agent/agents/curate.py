@@ -14,7 +14,7 @@ Output:
 import json
 from pathlib import Path
 
-from agent.lib.gmi_client import GmiClient, GMI_LLM_MODEL
+from agent.lib.openai_client import OpenAIClient, OPENAI_LLM_MODEL
 from agent.lib.logger import get_logger
 
 logger = get_logger("agent.agents.curate")
@@ -22,7 +22,7 @@ logger = get_logger("agent.agents.curate")
 
 def run(research: dict, contents: dict, output_path: Path) -> dict:
     """Merge research + contents into a single curated profile JSON."""
-    client = GmiClient()
+    client = OpenAIClient()
 
     prompt = f"""You are a portfolio curator.
 You are given:
@@ -58,7 +58,7 @@ Input CONTENTS (map url -> {{text, summary, highlights}}):
 
 Return ONLY the curated JSON object. No markdown, no explanation."""
 
-    text = client.generate_content(prompt, model=GMI_LLM_MODEL)
+    text = client.generate_content(prompt, model=OPENAI_LLM_MODEL)
     text = text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()

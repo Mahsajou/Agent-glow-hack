@@ -1,10 +1,10 @@
-"""Infer Vibe agent — GMI LLM. Output: vibe.json.
+"""Infer Vibe agent — OpenAI LLM. Output: vibe.json.
 Infers visual aesthetic and content structure (layout_density, tone) from research."""
 
 import json
 from pathlib import Path
 
-from agent.lib.gmi_client import GmiClient, GMI_LLM_MODEL
+from agent.lib.openai_client import OpenAIClient, OPENAI_LLM_MODEL
 from agent.lib.logger import get_logger
 
 logger = get_logger("agent.agents.vibe")
@@ -61,8 +61,8 @@ RESEARCH:
 {json.dumps(research, indent=2)}
 
 {VIBE_JSON_SPEC}"""
-    client = GmiClient()
-    text = client.generate_content(prompt, model=GMI_LLM_MODEL)
+    client = OpenAIClient()
+    text = client.generate_content(prompt, model=OPENAI_LLM_MODEL)
     text = text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()

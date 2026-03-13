@@ -58,8 +58,8 @@ export const INITIAL_STEPS: Step[] = [
   { id: "search",    label: "Searching",                   detail: "Exa Search",        status: "idle", api: "Search"   },
   { id: "contents",  label: "Fetching contents",           detail: "Exa Contents",      status: "idle", api: "Contents" },
   { id: "research",  label: "Deep research",               detail: "Exa Research",     status: "idle", api: "Research" },
-  { id: "vibe",      label: "Inferring aesthetic",         detail: "GMI",               status: "idle", api: "GMI"      },
+  { id: "vibe",      label: "Inferring aesthetic",         detail: "OpenAI",            status: "idle", api: "OpenAI"   },
   { id: "symbol",    label: "Creating symbol",             detail: "GMI",               status: "idle", api: "GMI"      },
   { id: "images",    label: "Generating images",           detail: "GMI Image",         status: "idle", api: "GMI"      },
-  { id: "generate",  label: "Generating portfolio",        detail: "GMI",               status: "idle", api: "GMI"      },
+  { id: "generate",  label: "Generating portfolio",        detail: "OpenAI",            status: "idle", api: "OpenAI"   },
 ];

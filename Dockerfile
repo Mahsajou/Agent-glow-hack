@@ -16,6 +16,6 @@ RUN mkdir -p /app/agent/output
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-# Required at runtime: GMI_API_KEY, EXA_API_KEY
+# Required at runtime: OPENAI_API_KEY, GMI_API_KEY, EXA_API_KEY
 # Optional: TEMPORAL_HOST (default localhost:7233), TEMPORAL_NAMESPACE, TEMPORAL_TASK_QUEUE
 CMD ["python", "agent/run.py", "worker"]

@@ -32,7 +32,7 @@ export default function Home() {
           </span>
         </div>
         <span className="text-xs text-[#444] tracking-wider">
-          Powered by Exa + GMI
+          Powered by Exa + OpenAI + GMI
         </span>
       </header>
 

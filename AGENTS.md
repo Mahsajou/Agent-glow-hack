@@ -7,20 +7,21 @@ A Next.js app that generates a personalized portfolio from a person's name. The 
 1. **Search** — Exa Search → `search.json`
 2. **Contents** — Exa Contents → `contents.json`
 3. **Research** — Exa Research → `research.json`
-4. **Vibe** — GMI LLM → `vibe.json`
+4. **Vibe** — OpenAI LLM → `vibe.json`
 5. **Symbol** — GMI Image → `symbol.png`
 6. **Images** — GMI Image → `banner.png`, `moodboard.png`
-7. **HTML** — LLM-generated → `portfolio.jsx`
+7. **HTML** — OpenAI LLM-generated → `portfolio.jsx`
 
 ## Stack
 - Frontend: Next.js 14, React, Tailwind CSS
 - Agent: Python 3 + Temporal (optional)
-- APIs: Exa (agent/lib/exa_client), GMI Cloud (agent/lib/gmi_client)
+- APIs: Exa (agent/lib/exa_client), OpenAI (agent/lib/openai_client), GMI Cloud for images (agent/lib/gmi_client)
 
 ## Key files
 ```
 agent/lib/exa_client.py   — Exa: search, get_contents, research
-agent/lib/gmi_client.py   — GMI: LLM + Image
+agent/lib/openai_client.py — OpenAI: LLM (vibe, curate, html, nudge)
+agent/lib/gmi_client.py   — GMI: Image (symbol, banner, moodboard)
 agent/agents/             — search, contents, research, vibe, symbol, images, html, nudge
 agent/activities/         — Temporal activities
 agent/workflows/          — PersonaGenerateWorkflow
@@ -37,8 +38,8 @@ cd agent && python run.py start "Jane Doe" "ML engineer"  # start workflow
 ```
 
 ## Environment
-Requires EXA_API_KEY and GMI_API_KEY in .env.local
-Optional: LOG_LEVEL (debug, info, warn, error) — controls agent log verbosity; default info
+Requires OPENAI_API_KEY, GMI_API_KEY, and EXA_API_KEY in .env.local
+Optional: OPENAI_LLM_MODEL (default gpt-4o), LOG_LEVEL (debug, info, warn, error) — controls agent log verbosity
 
 ### Storage backend
 Workflow artifacts (search.json, portfolio.jsx, etc.) are stored via `agent/lib/storage.py`.

@@ -23,7 +23,8 @@ if str(_root) not in sys.path:
 from agent.lib.logger import get_logger
 
 # Load env before imports
-if "GMI_API_KEY" not in os.environ or "EXA_API_KEY" not in os.environ:
+required = ["OPENAI_API_KEY", "GMI_API_KEY", "EXA_API_KEY"]
+if any(k not in os.environ for k in required):
     from dotenv import load_dotenv
     for p in [_root / ".env.local", Path(__file__).parent / ".env.local"]:
         if p.exists():

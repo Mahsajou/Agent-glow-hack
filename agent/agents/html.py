@@ -8,7 +8,7 @@ from pathlib import Path
 
 from lxml import html as lxml_html
 
-from agent.lib.gmi_client import GmiClient, GMI_LLM_MODEL
+from agent.lib.openai_client import OpenAIClient, OPENAI_LLM_MODEL
 from agent.lib.logger import get_logger
 
 logger = get_logger("agent.agents.html")
@@ -54,7 +54,7 @@ def _normalize_projects(research: dict) -> list[dict]:
     ]
 
 
-def _generate_template(client: GmiClient, research: dict, vibe: dict) -> str:
+def _generate_template(client: OpenAIClient, research: dict, vibe: dict) -> str:
     """Step 1: Generate an HTML template with URL placeholders (not full HTML blocks)."""
     fonts = vibe.get("font_suggestions", {})
     colors = vibe.get("color_palette", {})
@@ -98,7 +98,7 @@ RULES:
 - Mobile responsive
 Return ONLY valid HTML starting with <!DOCTYPE html>. No markdown, no explanation."""
 
-    raw = client.generate_content(prompt, model=GMI_LLM_MODEL)
+    raw = client.generate_content(prompt, model=OPENAI_LLM_MODEL)
     out = raw.strip()
     if out.startswith("```"):
         out = out.split("\n", 1)[1].rsplit("```", 1)[0].strip()
@@ -143,7 +143,7 @@ def _validate_html(html_content: str) -> tuple[bool, str]:
         return False, f"Parse error: {e}"
 
 
-def _fix_html(client: GmiClient, invalid_html: str, error: str) -> str:
+def _fix_html(client: OpenAIClient, invalid_html: str, error: str) -> str:
     """Ask LLM to fix invalid HTML given the validation error."""
     prompt = f"""Fix this HTML. It failed validation with error: {error}
 
@@ -155,7 +155,7 @@ Rules:
 HTML to fix:
 {invalid_html[:15000]}
 """
-    raw = client.generate_content(prompt, model=GMI_LLM_MODEL)
+    raw = client.generate_content(prompt, model=OPENAI_LLM_MODEL)
     out = raw.strip()
     if out.startswith("```"):
         out = out.split("\n", 1)[1].rsplit("```", 1)[0].strip()
@@ -181,7 +181,7 @@ def run(
     if research.get("error"):
         research = {"full_name": "Portfolio", "bio": "Error loading profile."}
 
-    client = GmiClient()
+    client = OpenAIClient()
 
     # Step 1: Generate template
     template = _generate_template(client, research, vibe)

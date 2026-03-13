@@ -1,18 +1,15 @@
 """
-GMI Cloud client: LLM (chat completions) + Image (requestqueue).
+GMI Cloud client: Image generation (requestqueue).
+LLM/chat completions moved to agent/lib/openai_client.py.
 """
 
 import base64
-import json
 import os
-import sys
 import time
 from typing import Optional
 
 import requests
 
-GMI_BASE_URL = "https://api.gmi-serving.com/v1"
-GMI_LLM_MODEL = os.environ.get("GMI_LLM_MODEL", "google/gemini-3.1-pro-preview")
 GMI_IMAGE_MODEL = os.environ.get("GMI_IMAGE_MODEL", "gemini-3.1-flash-image-preview")
 GMI_IMAGE_URL = "https://console.gmicloud.ai/api/v1/ie/requestqueue/apikey/requests"
 
@@ -37,31 +34,6 @@ def _image_url_from_outcome(outcome: dict) -> Optional[str]:
 class GmiClient:
     def __init__(self, api_key: str | None = None):
         self._api_key = api_key or os.environ["GMI_API_KEY"]
-
-    def generate_content(self, prompt: str, model: str = GMI_LLM_MODEL) -> str:
-        max_retries = 5
-        for attempt in range(max_retries):
-            resp = requests.post(
-                f"{GMI_BASE_URL}/chat/completions",
-                headers={"Authorization": f"Bearer {self._api_key}", "Content-Type": "application/json"},
-                json={
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 8192,
-                    "temperature": 0.7,
-                },
-                timeout=300,
-            )
-            if resp.status_code == 429 and attempt < max_retries - 1:
-                retry_after = 2 ** (attempt + 1)
-                try:
-                    retry_after = min(int(resp.headers.get("Retry-After", retry_after)), 60)
-                except (TypeError, ValueError):
-                    pass
-                time.sleep(retry_after)
-                continue
-            resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
 
     def generate_image(
         self,

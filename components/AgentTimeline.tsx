@@ -12,6 +12,7 @@ const API_COLORS: Record<string, string> = {
   "Search":    "text-[#34d399]",
   "Contents":  "text-[#60a5fa]",
   "Research":  "text-[#a78bfa]",
+  "OpenAI":    "text-[#10a37f]",
   "GMI":       "text-[#c8f050]",
 };
 
