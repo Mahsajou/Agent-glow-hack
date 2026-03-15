@@ -28,13 +28,13 @@ INSTRUCTIONS = {
 }
 
 
-def run(nudge_id: str, html: str, research: dict, vibe: dict) -> str:
+def run(nudge_id: str, html: str, curated: dict, vibe: dict) -> str:
     instruction = INSTRUCTIONS.get(nudge_id, "Improve design quality.")
     prompt = f"""Apply this change to the HTML:
 {instruction}
 
 VIBE: {json.dumps(vibe, indent=2)}
-RESEARCH: {json.dumps(research, indent=2)}
+CURATED PROFILE: {json.dumps(curated, indent=2)}
 
 CURRENT HTML:
 {html}

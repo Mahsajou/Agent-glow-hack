@@ -35,6 +35,7 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 
 from agent.config import TemporalConfig
+from agent.lib.precheck import run_prechecks
 from agent.workflows.persona_workflow import PersonaGenerateWorkflow, PersonaNudgeWorkflow
 from agent.activities.generate_activities import (
     search_activity,
@@ -62,6 +63,12 @@ BASE_PREFIX = os.environ.get("AGENT_OUTPUT_DIR", str(OUTPUT_DIR))
 
 async def run_worker() -> None:
     """Run the Temporal worker."""
+    errors = run_prechecks()
+    if errors:
+        for e in errors:
+            logger.error("Precheck failed: %s", e)
+        sys.exit(1)
+    logger.info("Prechecks passed")
     logger.info("Connecting to Temporal host=%s namespace=%s tls=%s", CONFIG.host, CONFIG.namespace, CONFIG.tls)
     client = await Client.connect(
         CONFIG.host,

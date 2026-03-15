@@ -1,11 +1,12 @@
 """Research agent — Exa Research. Output: research.json.
-Extracts data for all 12 portfolio aspects."""
+Extracts data for all 12 portfolio aspects. Indexes to RAG."""
 
 import json
 from pathlib import Path
 
 from agent.lib.exa_client import research as exa_research
 from agent.lib.logger import get_logger
+from agent.lib.rag import chunk_research, index_chunks
 
 logger = get_logger("agent.agents.research")
 
@@ -29,7 +30,7 @@ RESEARCH_INSTRUCTIONS_TEMPLATE = """Research {name} professionally and personall
 Use ONLY information from web sources. Never invent. Prioritize evidence (URLs, metrics) over claims. Be thorough."""
 
 
-def run(name: str, context: str, output_path: Path) -> dict:
+def run(name: str, context: str, output_path: Path, run_id: str) -> dict:
     logger.info("research name=%r context=%r", name, (context or "")[:50])
     ctx = (context or "").strip()
     context_section = f"Context/profession: {ctx}" if ctx else ""
@@ -40,4 +41,9 @@ def run(name: str, context: str, output_path: Path) -> dict:
     has_err = data.get("error")
     logger.info("research done has_error=%s", bool(has_err))
     output_path.write_text(json.dumps(data, indent=2))
+    if not has_err:
+        chunks = chunk_research(data)
+        if chunks:
+            n = index_chunks(run_id, chunks)
+            logger.info("research indexed run_id=%s chunks=%d", run_id, n)
     return data

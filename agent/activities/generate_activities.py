@@ -21,6 +21,11 @@ def _store(output_dir: str):
     )
 
 
+def _run_id(output_dir: str) -> str:
+    """Extract run_id from output_dir (last path segment)."""
+    return output_dir.rstrip("/").split("/")[-1] or "default"
+
+
 def _path_for_agents(store):
     """Get Path for agents. For S3 yields from work_directory context."""
     from agent.lib.storage import S3Store
@@ -68,8 +73,9 @@ async def contents_activity(output_dir: str) -> dict:
             f"search.json not found in {output_dir}. Ensure search_activity runs and completes before contents_activity."
         )
     from agent.agents import contents as contents_agent
+    run_id = _run_id(output_dir)
     with _path_for_agents(store) as path:
-        return contents_agent.run(search_data, path / "contents.json")
+        return contents_agent.run(search_data, path / "contents.json", run_id)
 
 
 @activity.defn
@@ -81,13 +87,14 @@ async def research_activity(name: str, context: str, output_dir: str) -> dict:
     if data is not None:
         return data
     from agent.agents import research as research_agent
+    run_id = _run_id(output_dir)
     with _path_for_agents(store) as path:
-        return research_agent.run(name, context, path / "research.json")
+        return research_agent.run(name, context, path / "research.json", run_id)
 
 
 @activity.defn
 async def curate_activity(output_dir: str) -> dict:
-    """Curate research + contents into a unified profile. Output: curated.json."""
+    """Curate: retrieve from RAG + LLM synthesize. Output: curated.json."""
     activity.logger.info("Running curate for output_dir=%s", output_dir[:80])
     store = _store(output_dir)
     data = store.read_json("curated.json")
@@ -101,8 +108,12 @@ async def curate_activity(output_dir: str) -> dict:
             "Ensure contents_activity and research_activity complete before curate_activity."
         )
     from agent.agents import curate as curate_agent
+    from agent.lib.rag import build_queries, retrieve
+    run_id = _run_id(output_dir)
+    queries = build_queries(research)
+    chunks = retrieve(run_id, queries) if queries else []
     with _path_for_agents(store) as path:
-        return curate_agent.run(research, contents, path / "curated.json")
+        return curate_agent.run(research, chunks, path / "curated.json")
 
 
 @activity.defn

@@ -24,13 +24,13 @@ async def nudge_activity(nudge_id: str, output_dir: str) -> str:
     from agent.agents import nudge as nudge_agent
 
     store = _store(output_dir)
-    research = store.read_json("research.json")
+    curated = store.read_json("curated.json")
     vibe = store.read_json("vibe.json")
     html_blob = store.read_blob("portfolio.jsx")
-    if research is None or vibe is None or html_blob is None:
+    if curated is None or vibe is None or html_blob is None:
         return ""
     html = html_blob.decode("utf-8")
-    new_html = nudge_agent.run(nudge_id, html, research, vibe)
+    new_html = nudge_agent.run(nudge_id, html, curated, vibe)
     store.write_blob("portfolio.jsx", new_html.encode("utf-8"))
     return ""
 
